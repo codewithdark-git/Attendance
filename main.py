@@ -14,6 +14,7 @@ students_data = [
     {"subject": user_input, "students": [
         {"id": 232501, "name": "Harry",  "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\harry.jpg"},
         {"id": 232552, "name": "Ahsan",  "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\Ahsan.jpg"},
+        {"id": 232552, "name": "Professor",  "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\professor.jpg"}
     #    add more sstudents data for as need
     ]}
 ]
