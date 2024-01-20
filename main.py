@@ -20,6 +20,7 @@ def speak(audio):
 user_input = input("Please enter a Class Name: ")
 students_data = [
     {"subject": user_input, "students": [
+<<<<<<< Updated upstream
         {"id": 232501, "name": "Harry", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\harry.jpg"},
         {"id": 232502, "name": "Ahsan","image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\Ahsan.jpg"},
         {"id": 232503, "name": "Professor", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\professor.jpg"},
@@ -82,6 +83,12 @@ students_data = [
         # {"id": 232560, "name": " ", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\.jpg"},
         # {"id": 232561, "name": " ", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\.jep"}
 
+=======
+        {"id": 232501, "name": "Harry",  "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\harry.jpg"},
+        {"id": 232552, "name": "Ahsan",  "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\Ahsan.jpg"},
+        {"id": 232552, "name": "Professor",  "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\professor.jpg"},
+    #    add more sstudents data for as need
+>>>>>>> Stashed changes
     ]}
 ]
 
