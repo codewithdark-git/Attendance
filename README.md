@@ -21,6 +21,7 @@ Ensure proper configuration of student data and image paths for accurate recogni
 - `cv2`
 - `numpy`
 - `csv`
+- `pyttx3`
 
 ## License
 This project is licensed under the [MIT License](LICENSE).
