@@ -6,25 +6,20 @@ from datetime import datetime
 import os
 import pyttsx3
 
-
 engine = pyttsx3.init()
 
 def speak(audio):
     engine.say(audio)
     engine.runAndWait()
 
-
-
 # Load known faces and their names with subject information
-
 user_input = input("Please enter a Class Name: ")
 students_data = [
     {"subject": user_input, "students": [
-
         {"id": 232501, "name": "Harry", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\harry.jpg"},
-        {"id": 232502, "name": "Ahsan","image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\Ahsan.jpg"},
-        {"id": 232503, "name": "Professor", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\professor.jpg"},
-    
+        {"id": 232502, "name": "dark", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\dark.jpg"},
+        {"id": 232503, "name": "Ali khan", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\ali-khan.jpg"},
+        {"id": 232504, "name": "Professor", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\professor.jpg"},
     ]}
 ]
 
@@ -32,13 +27,16 @@ known_face_encodings = []
 known_face_names = []
 subject_mapping = {}
 now = datetime.now()
-current_date = now.strftime("%Y-%m-%d")
+current_date = now.strftime("%d-%m-%Y")
 current_month = now.strftime("%B")
-dates = [current_date]
+
 
 # Create a directory to store CSV files if it doesn't exist
 output_directory = os.path.join("D:\\CodeBackground\\pythonProject\\Attendance\\Attendance_CSV", current_month)
 os.makedirs(output_directory, exist_ok=True)
+
+# Define students_attendance outside the loop
+students_attendance = {}
 
 for subject_data in students_data:
     subject_name = subject_data["subject"]
@@ -47,9 +45,7 @@ for subject_data in students_data:
     csv_file_path = os.path.join(output_directory, f"Attendance_{subject_name}_{current_month}.csv")
     with open(csv_file_path, "a", newline="\n") as f:
         lnwrite = csv.writer(f)
-
-        lnwrite.writerow(["ID", "Name"] + dates)
-
+        lnwrite.writerow(["ID", current_date])
 
         for student in subject_data["students"]:
             student_image = face_recognition.load_image_file(student["image_path"])
@@ -59,7 +55,6 @@ for subject_data in students_data:
             subject_mapping[student["name"]] = {"id": student["id"], "subject": subject_name}
 
     video_capture = cv2.VideoCapture(0)
-    students_attendance = {}
 
     while True:
         _, frame = video_capture.read()
@@ -78,17 +73,25 @@ for subject_data in students_data:
                 student_info = subject_mapping.get(known_face_names[best_match_index], {})
                 student_id = student_info.get("id", "Unknown")
                 name = known_face_names[best_match_index]
-                students_attendance[student_id] = {"name": name, "status": "Present"}
 
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                bottom_left_corner_of_text = (10, 100)
-                font_scale = 1
-                font_color = (66, 0, 255)
-                thickness = 2
-                line_type = 2
-                cv2.putText(frame, f"{name} ({student_id}, {subject_name}) Present", bottom_left_corner_of_text, font,
-                            font_scale, font_color, thickness, line_type)
-                speak(f"{name} present in {subject_name}")
+                # Check if the student's information is in the attendance CSV file
+                status = 'Present' if student_id in students_attendance else 'Absent'
+                students_attendance[student_id] = {"name": name, "status": status}
+
+                
+
+                for (top, right, bottom, left) in face_locations:
+                    # Draw rectangle around the face
+                    cv2.rectangle(frame, (left*4, top*4), (right*4, bottom*4), (0, 255, 0), 2)
+        
+                    # Add text label at the bottom of the rectangle
+                    label = f"{name}"  # Customize the label as needed
+                    cv2.putText(frame, label, (left*4, bottom*4 + 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+                speak(f"{name} present")
+
+
+                
 
         cv2.imshow("Attendance", frame)
 
@@ -99,12 +102,17 @@ for subject_data in students_data:
     # Release video capture before writing attendance data to the CSV file
     video_capture.release()
 
+    # Mark students not present in the attendance dictionary as 'Absent'
+    for student_info in subject_mapping.values():
+        student_id = student_info.get("id", "Unknown")
+        if student_id not in students_attendance:
+            students_attendance[student_id] = {"status": "Absent"}
+
     # Write attendance data to the CSV file sorted by student ID
     with open(csv_file_path, "a", newline="\n") as f:
         lnwrite = csv.writer(f)
-
         for student_id, info in sorted(students_attendance.items(), key=lambda x: int(x[0])):
-            row_data = [student_id, info["name"], "Present"]
+            row_data = [student_id, info["status"]]
             lnwrite.writerow(row_data)
 
     print(f"Attendance saved to {csv_file_path}")
