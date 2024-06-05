@@ -1,121 +1,246 @@
-import face_recognition
 import cv2
-import numpy as np
-import csv
-from datetime import datetime
 import os
-import pyttsx3
+from datetime import date, datetime
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+import csv
+import joblib
 
-engine = pyttsx3.init()
+nimgs = 5
 
-def speak(audio):
-    engine.say(audio)
-    engine.runAndWait()
-
-# Load known faces and their names with subject information
-user_input = input("Please enter a Class Name: ")
-students_data = [
-    {"subject": user_input, "students": [
-        {"id": 232501, "name": "Harry", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\harry.jpg"},
-        {"id": 232502, "name": "dark", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\dark.jpg"},
-        {"id": 232503, "name": "Ali khan", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\ali-khan.jpg"},
-        {"id": 232504, "name": "Professor", "image_path": "D:\\CodeBackground\\pythonProject\\Attendance\\faces\\professor.jpg"},
-    ]}
-]
-
-known_face_encodings = []
-known_face_names = []
-subject_mapping = {}
-now = datetime.now()
-current_date = now.strftime("%d-%m-%Y")
-current_month = now.strftime("%B")
+current_date = datetime.now().strftime("%d-%b-%Y")
+current_time = datetime.now().strftime("%H:%M:%S")
+current_month = date.today().strftime("%B")
+face_detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 
-# Create a directory to store CSV files if it doesn't exist
-output_directory = os.path.join("D:\\CodeBackground\\pythonProject\\Attendance\\Attendance_CSV", current_month)
-os.makedirs(output_directory, exist_ok=True)
+def totalreg():
+    return len(os.listdir('faces'))
 
-# Define students_attendance outside the loop
-students_attendance = {}
 
-for subject_data in students_data:
-    subject_name = subject_data["subject"]
+def train_model(program_name):
+    faces = []
+    labels = []
 
-    # Open CSV file in write mode or create a new one if it doesn't exist
-    csv_file_path = os.path.join(output_directory, f"Attendance_{subject_name}_{current_month}.csv")
-    with open(csv_file_path, "a", newline="\n") as f:
-        lnwrite = csv.writer(f)
-        lnwrite.writerow(["ID", current_date])
+    try:
+        userlist = [user for user in os.listdir(f'../../pythonProject/Attendance/face/{program_name}') if
+                    os.path.isdir(os.path.join(f'../../pythonProject/Attendance/face/{program_name}', user))]
 
-        for student in subject_data["students"]:
-            student_image = face_recognition.load_image_file(student["image_path"])
-            student_encoding = face_recognition.face_encodings(student_image)[0]
-            known_face_encodings.append(student_encoding)
-            known_face_names.append(student["name"])
-            subject_mapping[student["name"]] = {"id": student["id"], "subject": subject_name}
+        if not userlist:
+            print("No faces found for training.")
+            return None
 
-    video_capture = cv2.VideoCapture(0)
+        for user in userlist:
+            user_directory = os.path.join(f'../../pythonProject/Attendance/face/{program_name}', user)
+            for imgname in os.listdir(user_directory):
+                img = cv2.imread(os.path.join(user_directory, imgname))
+                resized_face = cv2.resize(img, (50, 50))
+                faces.append(resized_face.ravel())
+                labels.append(user)
 
+        faces = np.array(faces)
+        knn = KNeighborsClassifier(n_neighbors=5)
+
+        if len(set(labels)) > 1:
+            model_save_dir = '../../pythonProject/Attendance/face'
+            os.makedirs(os.path.join(model_save_dir, program_name), exist_ok=True)
+            knn.fit(faces, labels)
+            model_save_path = os.path.join(model_save_dir, program_name, 'face_recognition_model.pkl')
+            joblib.dump(knn, model_save_path)
+            return knn
+        else:
+            print("Insufficient data for training. At least two individuals required.")
+            return None
+
+    except Exception as e:
+        print(f"Error during training: {e}")
+        return None
+
+
+def extract_faces(img):
+    try:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        face_points = face_detector.detectMultiScale(gray, 1.2, 5, minSize=(20, 20))
+        return face_points
+    except:
+        return []
+
+
+def identify_face(facearray, model):
+    if model is not None:
+        return model.predict(facearray.reshape(1, -1))[0]
+    else:
+        return None
+
+
+def start():
+    program_name = input('Enter Your Program name: ').upper()
+    csv_file_path = None
+
+    try:
+        model = train_model(program_name)
+    except FileNotFoundError as e:
+        print(f'Error is:{e}')
+        return
+
+    subject = input('Enter your Subject for Attendance: ').capitalize()
+
+    if not os.path.isfile(get_attendance_file_path(program_name, subject)):
+        create_attendance_csv(program_name, subject)
+
+    ret = True
+    cap = cv2.VideoCapture(0)
+    while ret:
+        ret, frame = cap.read()
+
+        # Check if the frame has a valid size
+        if frame is not None and frame.shape[0] > 0 and frame.shape[1] > 0:
+
+            if len(extract_faces(frame)) > 0:
+                (x, y, w, h) = extract_faces(frame)[0]
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (86, 32, 251), 1)
+                cv2.rectangle(frame, (x, y), (x + w, y - 40), (86, 32, 251), -1)
+                face = cv2.resize(frame[y:y + h, x:x + w], (50, 50))
+                identified_person = identify_face(face.reshape(1, -1), model)
+                if identified_person:
+                    csv_file_path = save_attendance(program_name, subject, identified_person, current_time,
+                                                    current_date)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 1)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (50, 50, 255), 2)
+                    cv2.rectangle(frame, (x, y - 40), (x + w, y), (50, 50, 255), -1)
+                    cv2.putText(frame, f'{identified_person}', (x, y - 15), cv2.FONT_HERSHEY_COMPLEX, 1,
+                                (255, 255, 255), 1)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (50, 50, 255), 1)
+
+            cv2.imshow('Attendance', frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+    return csv_file_path
+
+
+def add(new_user, program_name):
+    new_user_name, new_user_id, program_name = new_user.split('_')
+
+    user_image_folder = os.path.join('../../pythonProject/Attendance/face', f'{program_name}',
+                                     f'{new_user_name}_{new_user_id}')
+    if not os.path.isdir(user_image_folder):
+        os.makedirs(user_image_folder)
+    i, j = 0, 0
+    cap = cv2.VideoCapture(0)
     while True:
-        _, frame = video_capture.read()
-        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-        rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
-
-        face_locations = face_recognition.face_locations(rgb_small_frame)
-        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-
-        for face_encoding, face_location in zip(face_encodings, face_locations):
-            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-            best_match_index = np.argmin(face_distances)
-
-            if matches[best_match_index]:
-                student_info = subject_mapping.get(known_face_names[best_match_index], {})
-                student_id = student_info.get("id", "Unknown")
-                name = known_face_names[best_match_index]
-
-                # Check if the student's information is in the attendance CSV file
-                status = 'Present' if student_id in students_attendance else 'Absent'
-                students_attendance[student_id] = {"name": name, "status": status}
-
-                
-
-                for (top, right, bottom, left) in face_locations:
-                    # Draw rectangle around the face
-                    cv2.rectangle(frame, (left*4, top*4), (right*4, bottom*4), (0, 255, 0), 2)
-        
-                    # Add text label at the bottom of the rectangle
-                    label = f"{name}"  # Customize the label as needed
-                    cv2.putText(frame, label, (left*4, bottom*4 + 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-
-                speak(f"{name} present")
+        _, frame = cap.read()
+        faces = extract_faces(frame)
+        for (x, y, w, h) in faces:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 20), 2)
+            cv2.putText(frame, f'Images Captured: {i}/{nimgs}', (30, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 20), 2, cv2.LINE_AA)
+            if j % 5 == 0:
+                name = f'{new_user_name}_{new_user_id}_{i}.jpg'
+                cv2.imwrite(os.path.join(user_image_folder, name), frame[y:y + h, x:x + w])
+                i += 1
+            j += 1
+        if i == nimgs:
+            break
+        cv2.imshow('Adding new User', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    cap.release()
+    cv2.destroyAllWindows()
 
 
-                
+def save_attendance(program_name, subject, identified_person, current_time, current_date):
+    csv_file_path = get_attendance_file_path(program_name, subject)
 
-        cv2.imshow("Attendance", frame)
+    if not os.path.isfile(csv_file_path):
+        create_attendance_csv(program_name, subject)
 
-        # Break out of the loop when 'q' key is pressed
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+    attendance_data = [identified_person, current_date]
+
+    # Check if the student's attendance has already been recorded for the current date and subject
+    if not is_attendance_recorded(csv_file_path, identified_person, current_date):
+        with open(csv_file_path, "a", newline="\n") as f:
+            lnwrite = csv.writer(f)
+            lnwrite.writerow(attendance_data)
+
+    return csv_file_path
+
+
+def is_attendance_recorded(csv_file_path, student_id, current_date):
+    with open(csv_file_path, "r", newline="\n") as f:
+        reader = csv.reader(f)
+        next(reader)  # Skip the header row
+        for row in reader:
+            if row[0] == student_id and row[2] == current_date:
+                return True
+    return False
+
+
+def get_attendance_file_path(program_name, subject):
+    return os.path.join('../../pythonProject/Attendance/Attendance',
+                        f"Attendance for {program_name} subject {subject} in {current_month}.csv")
+
+
+def create_attendance_csv(program_name, subject):
+    csv_file_path = get_attendance_file_path(program_name, subject)
+    header = ["Name", subject, "Date"]
+    with open(csv_file_path, "w", newline="\n") as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+    return csv_file_path
+
+
+def get_attendance(program_name, subject):
+    csv_file_path = get_attendance_file_path(program_name, subject)
+
+    try:
+        with open(csv_file_path, "r") as f:
+            reader = csv.reader(f)
+            # Check if the first row contains headers
+            header = next(reader)
+            if "Name" in header and "Time" in header and "Date" in header:
+                # Check if there is at least one data row
+                for row in reader:
+                    if row:
+                        return csv_file_path
+        return None
+    except FileNotFoundError:
+        return None
+
+
+if __name__ == "__main__":
+    # Choose the operation to perform: 'add' to add a new user, 'start' to start attendance
+    while True:
+        operation = input("Enter operation ('add', 'start', 'get' or 'exit'): ")
+
+        if operation == 'add':
+            program_name = input('Enter your Program Name: ').upper()
+            new_user_name = input('Enter new username: ').capitalize()
+            new_user_id = input('Enter new user ID: ')
+
+            add(f'{new_user_name}_{new_user_id}_{program_name}', program_name)
+
+        elif operation == 'start':
+            print(f"Atleast Two student in {program_name} then start:")
+            csv_file_path = start()
+            print(f"Attendance data saved in: {csv_file_path}")
+
+        elif operation == 'get':
+            program_name = input('Enter your Program Name: ').upper()
+            subject = input('Enter subject for attendance: ').capitalize()
+
+            attendance_file_path = get_attendance(program_name, subject)
+            if attendance_file_path:
+                # Read the file or perform any other operations with the file path
+                print(f"Attendance file found at: {attendance_file_path}")
+            else:
+                print("Attendance file not found.")
+
+        elif operation == 'exit':
             break
 
-    # Release video capture before writing attendance data to the CSV file
-    video_capture.release()
-
-    # Mark students not present in the attendance dictionary as 'Absent'
-    for student_info in subject_mapping.values():
-        student_id = student_info.get("id", "Unknown")
-        if student_id not in students_attendance:
-            students_attendance[student_id] = {"status": "Absent"}
-
-    # Write attendance data to the CSV file sorted by student ID
-    with open(csv_file_path, "a", newline="\n") as f:
-        lnwrite = csv.writer(f)
-        for student_id, info in sorted(students_attendance.items(), key=lambda x: int(x[0])):
-            row_data = [student_id, info["status"]]
-            lnwrite.writerow(row_data)
-
-    print(f"Attendance saved to {csv_file_path}")
-
-# Close all windows
-cv2.destroyAllWindows()
+        else:
+            print("Invalid operation. Please enter 'add', 'start', 'get' or 'exit'.")
