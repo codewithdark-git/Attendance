@@ -23,15 +23,15 @@ def train_model(program_name):
     labels = []
 
     try:
-        userlist = [user for user in os.listdir(f'../../pythonProject/Attendance/face/{program_name}') if
-                    os.path.isdir(os.path.join(f'../../pythonProject/Attendance/face/{program_name}', user))]
+        userlist = [user for user in os.listdir(f'/face/{program_name}') if
+                    os.path.isdir(os.path.join(f'/face/{program_name}', user))]
 
         if not userlist:
             print("No faces found for training.")
             return None
 
         for user in userlist:
-            user_directory = os.path.join(f'../../pythonProject/Attendance/face/{program_name}', user)
+            user_directory = os.path.join(f'/face/{program_name}', user)
             for imgname in os.listdir(user_directory):
                 img = cv2.imread(os.path.join(user_directory, imgname))
                 resized_face = cv2.resize(img, (50, 50))
@@ -42,7 +42,7 @@ def train_model(program_name):
         knn = KNeighborsClassifier(n_neighbors=5)
 
         if len(set(labels)) > 1:
-            model_save_dir = '../../pythonProject/Attendance/face'
+            model_save_dir = 'face'
             os.makedirs(os.path.join(model_save_dir, program_name), exist_ok=True)
             knn.fit(faces, labels)
             model_save_path = os.path.join(model_save_dir, program_name, 'face_recognition_model.pkl')
@@ -125,7 +125,7 @@ def start():
 def add(new_user, program_name):
     new_user_name, new_user_id, program_name = new_user.split('_')
 
-    user_image_folder = os.path.join('../../pythonProject/Attendance/face', f'{program_name}',
+    user_image_folder = os.path.join('face', f'{program_name}',
                                      f'{new_user_name}_{new_user_id}')
     if not os.path.isdir(user_image_folder):
         os.makedirs(user_image_folder)
@@ -180,7 +180,7 @@ def is_attendance_recorded(csv_file_path, student_id, current_date):
 
 
 def get_attendance_file_path(program_name, subject):
-    return os.path.join('../../pythonProject/Attendance/Attendance',
+    return os.path.join('Attendance',
                         f"Attendance for {program_name} subject {subject} in {current_month}.csv")
 
 
