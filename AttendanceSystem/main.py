@@ -1,6 +1,7 @@
-from attendance_system.face_recognition.face_training import train_model
-from attendance_system.face_recognition.face_identification import start
-from attendance_system.attendance.attendance_manager import add, get_attendance
+from AttendanceSystem.face_recognition.face_training import train_model
+from AttendanceSystem.face_recognition.face_identification import start
+from AttendanceSystem.attendance.attendance_file import get_attendance
+from AttendanceSystem.attendance.attendance_manager import add
 
 if __name__ == "__main__":
     while True:
