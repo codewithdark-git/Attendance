@@ -13,6 +13,18 @@ Attendance Management System is a Python-based application that helps in managin
 ## Introduction
 Attendance Management System is designed to automate the process of taking attendance in educational institutions or any other settings where attendance tracking is required. It uses face recognition technology to identify individuals and record their attendance.
 
+## Project Structure
+
+- `attendance_system/`
+- `main.py`: Entry point for the project.
+- `config.py`: Configuration variables and constants.
+- `utils.py`: Helper functions.
+- `face_recognition/`: Face recognition related modules.
+- `attendance/`: Attendance management related modules.
+- `data/`: Directory for storing data like trained models and attendance files.
+- `requirements.txt`: Project dependencies.
+- `README.md`: Project documentation.
+
 ## Features
 - Face detection and recognition for attendance tracking.
 - Support for multiple programs and subjects.
@@ -23,7 +35,7 @@ Attendance Management System is designed to automate the process of taking atten
 ## Installation
 1. Clone the repository:
     ```
-    git clone https://github.com/codewithdark-git/attendance-management-system.git
+    git clone https://github.com/codewithdark-git/attendance-system.git
     ```
 2. Install the required dependencies:
     ```
@@ -35,9 +47,19 @@ Attendance Management System is designed to automate the process of taking atten
 ## Usage
 1. Run the `main.py` file:
     ```
-    python main.py
+    python -m AttendanceSystem.main
     ```
 2. Follow the on-screen instructions to add new users and start taking attendance.
+
+* To add a new user:
+    ```add```
+* To start the attendance process:
+    ```start```
+* To get the attendance file:
+    ```get```
+* To exit:
+    ```exit```
+
 
 ## Contributing
 Contributions are welcome! If you encounter any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request.
@@ -49,6 +71,12 @@ Contributions are welcome! If you encounter any issues or have suggestions for i
 - `joblib:` For saving and loading machine learning models.
 - `csv:` For reading and writing CSV files.
 - `datetime:` For handling date and time operations.
+
+## Notes
+
+- Ensure that the webcam is connected and working properly before running the attendance process.
+- Make sure to add at least two users before starting the attendance process.
+
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
