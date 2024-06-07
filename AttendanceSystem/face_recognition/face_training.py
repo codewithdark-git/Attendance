@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 import joblib
-from attendance_system.config import FACE_DIR, NIMGS
-from attendance_system.utils import create_directory
+from AttendanceSystem.config import FACE_DIR, NIMGS
+from AttendanceSystem.utils import create_directory
 
 def train_model(program_name):
     faces = []
