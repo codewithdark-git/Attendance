@@ -5,7 +5,8 @@ from datetime import date, datetime
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FACE_DIR = os.path.join(BASE_DIR, 'data', 'faces')
 ATTENDANCE_DIR = os.path.join(BASE_DIR, 'data', 'Attendance')
-CASCADE_PATH = os.path.join(BASE_DIR, 'data', 'haarcascade_frontalface_default.xml')
+os.makedirs(ATTENDANCE_DIR, exist_ok=True)
+CASCADE_PATH = os.path.join(BASE_DIR, 'data', '../haarcascade_frontalface_default.xml')
 
 # Constants
 NIMGS = 5
