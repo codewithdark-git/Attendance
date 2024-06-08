@@ -7,9 +7,10 @@ import joblib
 
 from AttendanceSystem.face_recognition.face_training import train_model
 from AttendanceSystem.attendance.attendance_file import save_attendance, get_attendance_file_path, create_attendance_csv, is_attendance_recorded
+from AttendanceSystem.config import CURRENT_TIME, CURRENT_DATE, CURRENT_MONTH
 
 # Update the path to the Haar Cascade file
-face_detector = cv2.CascadeClassifier('data/haarcascade_frontalface_default.xml')
+face_detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 def extract_faces(img):
     try:
@@ -56,8 +57,8 @@ def start():
                 face = cv2.resize(frame[y:y + h, x:x + w], (50, 50))
                 identified_person = identify_face(face.reshape(1, -1), model)
                 if identified_person:
-                    csv_file_path = save_attendance(program_name, subject, identified_person, current_time,
-                                                    current_date)
+                    csv_file_path = save_attendance(program_name, subject, identified_person, CURRENT_TIME,
+                                                    CURRENT_DATE)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 1)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (50, 50, 255), 2)
                     cv2.rectangle(frame, (x, y - 40), (x + w, y), (50, 50, 255), -1)
