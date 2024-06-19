@@ -2,44 +2,38 @@ import os
 import cv2
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
+from sqlalchemy.orm import Session
+from AttendanceSystem.models import Face, User
 import joblib
-from AttendanceSystem.config import FACE_DIR, NIMGS
-from AttendanceSystem.utils import create_directory
 
-def train_model(program_name):
+def train_model(session: Session, program_name: str):
     faces = []
     labels = []
 
-    try:
-        userlist = [user for user in os.listdir(os.path.join(FACE_DIR, program_name)) if
-                    os.path.isdir(os.path.join(FACE_DIR, program_name, user))]
+    users = session.query(User).filter_by(program_name=program_name).all()
 
-        if not userlist:
-            print("No faces found for training.")
-            return None
+    if not users:
+        print("No faces found for training.")
+        return None
 
-        for user in userlist:
-            user_directory = os.path.join(FACE_DIR, program_name, user)
-            for imgname in os.listdir(user_directory):
-                img = cv2.imread(os.path.join(user_directory, imgname))
-                resized_face = cv2.resize(img, (50, 50))
-                faces.append(resized_face.ravel())
-                labels.append(user)
+    for user in users:
+        user_faces = session.query(Face).filter_by(user_id=user.id).all()
+        for face in user_faces:
+            img = cv2.imread(face.image_data)
+            resized_face = cv2.resize(img, (50, 50))
+            faces.append(resized_face.ravel())
+            labels.append(user.user_id)
 
-        faces = np.array(faces)
-        knn = KNeighborsClassifier(n_neighbors=5)
+    faces = np.array(faces)
+    knn = KNeighborsClassifier(n_neighbors=5)
 
-        if len(set(labels)) > 1:
-            model_save_dir = os.path.join(FACE_DIR, program_name)
-            create_directory(model_save_dir)
-            knn.fit(faces, labels)
-            model_save_path = os.path.join(model_save_dir, 'face_recognition_model.pkl')
-            joblib.dump(knn, model_save_path)
-            return knn
-        else:
-            print("Insufficient data for training. At least two individuals required.")
-            return None
-
-    except Exception as e:
-        print(f"Error during training: {e}")
+    if len(set(labels)) > 1:
+        knn.fit(faces, labels)
+        model_save_path = os.path.join('models', f'{program_name}_face_recognition_model.pkl')
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
+        joblib.dump(knn, model_save_path)
+        return knn
+    else:
+        print("Insufficient data for training. At least two individuals required.")
         return None
