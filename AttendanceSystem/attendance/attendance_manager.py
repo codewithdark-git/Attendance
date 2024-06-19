@@ -1,44 +1,12 @@
-import os
-import csv
-import cv2
-from datetime import date
-from AttendanceSystem.attendance.attendance_file import get_attendance_file_path, create_attendance_csv, is_attendance_recorded, save_attendance
-from AttendanceSystem.face_recognition.face_identification import extract_faces
-from AttendanceSystem.config import FACE_DIR, NIMGS
+from AttendanceSystem.models import Attendance, User
+from AttendanceSystem.config import CURRENT_DATE_AND_TIME
+from datetime import datetime
 
-
-def add(new_user, program_name):
-    new_user_name, new_user_id, program_name = new_user.split('_')
-
-    user_image_folder = os.path.join(FACE_DIR, f'{program_name}', f'{new_user_name}_{new_user_id}')
-    if not os.path.isdir(user_image_folder):
-        os.makedirs(user_image_folder)
-
-    i, j = 0, 0
-    cap = cv2.VideoCapture(0)
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("Failed to capture image")
-            break
-        faces = extract_faces(frame)
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 20), 2)
-            cv2.putText(frame, f'Images Captured: {i}/{NIMGS}', (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 20), 2,
-                        cv2.LINE_AA)
-            if j % 5 == 0:
-                name = f'{new_user_name}_{new_user_id}_{i}.jpg'
-                cv2.imwrite(os.path.join(user_image_folder, name), frame[y:y + h, x:x + w])
-                i += 1
-            j += 1
-        try:
-            cv2.imshow('Adding new User', frame)
-        except cv2.error as e:
-            print("Could not display frame:", e)
-            break
-        if i == NIMGS:
-            break
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    cap.release()
-    cv2.destroyAllWindows()
+def save_attendance(session, program_name, subject, identified_person, CURRENT_DATE_AND_TIME):
+    user = session.query(User).filter_by(user_id=identified_person, program_name=program_name).first()
+    if user:
+        new_attendance = Attendance(user_id=user.id, subject=subject, date=CURRENT_DATE_AND_TIME,)
+        session.add(new_attendance)
+        session.commit()
+    else:
+        print("User not found in the database.")
