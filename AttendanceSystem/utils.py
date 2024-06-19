@@ -1,7 +1,6 @@
-from datetime import datetime, date
+# utils.py
+import os
 
-def current_date():
-    return date.today().strftime("%d-%b-%Y")
-
-def current_time():
-    return datetime.now().strftime("%H:%M:%S")
+def create_directory(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
