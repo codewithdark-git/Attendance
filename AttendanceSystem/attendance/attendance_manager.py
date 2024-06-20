@@ -1,12 +1,21 @@
-from AttendanceSystem.models import Attendance, User
-from AttendanceSystem.config import CURRENT_DATE_AND_TIME
+from AttendanceSystem.models import session, Attendance, User
 from datetime import datetime
 
-def save_attendance(session, program_name, subject, identified_person, CURRENT_DATE_AND_TIME):
-    user = session.query(User).filter_by(user_id=identified_person, program_name=program_name).first()
+
+def save_attendance(session, program_name, subject, identified_person, current_time, current_date):
+    user = session.query(User).filter(User.name == identified_person).first()
     if user:
-        new_attendance = Attendance(user_id=user.id, subject=subject, date=CURRENT_DATE_AND_TIME,)
-        session.add(new_attendance)
-        session.commit()
-    else:
-        print("User not found in the database.")
+        attendance_exists = session.query(Attendance).filter(
+            Attendance.user_id == user.id,
+            Attendance.subject == subject,
+            Attendance.date == current_date.date()
+        ).first()
+
+        if not attendance_exists:
+            attendance = Attendance(
+                user_id=user.id,
+                subject=subject,
+                date=current_date
+            )
+            session.add(attendance)
+            session.commit()
