@@ -2,8 +2,10 @@ import cv2
 from AttendanceSystem.face_recognition.face_utils import extract_faces
 from AttendanceSystem.face_recognition.face_training import train_model
 from AttendanceSystem.attendance.attendance_manager import save_attendance
-from AttendanceSystem.config import CURRENT_TIME, CURRENT_DATE_AND_TIME
+from AttendanceSystem.config import CURRENT_TIME, CURRENT_DATE
 from AttendanceSystem.models import session
+from datetime import datetime
+
 
 def identify_face(facearray, model):
     if model is not None:
@@ -29,7 +31,7 @@ def start_attendance_flow():
                 face = cv2.resize(frame[y:y + h, x:x + w], (50, 50))
                 identified_person = identify_face(face, model)
                 if identified_person:
-                    save_attendance(session, program_name, subject, identified_person, CURRENT_DATE_AND_TIME)
+                    save_attendance(session, program_name, subject, identified_person, CURRENT_TIME, CURRENT_DATE.strftime("%d-%b-%Y"))
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 1)
                     cv2.putText(frame, f'{identified_person}', (x, y - 15), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
 
