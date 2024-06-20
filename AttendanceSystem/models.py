@@ -2,8 +2,8 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, Foreign
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
-
-DATABASE_URL = 'sqlite:///attendance.db'
+import base64
+from config import DATABASE_URL
 
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
