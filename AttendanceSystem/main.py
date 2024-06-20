@@ -3,6 +3,8 @@ from AttendanceSystem.attendance.attendance_manager import save_attendance
 from AttendanceSystem.models import create_tables, session, User, Face, Attendance
 from AttendanceSystem.face_recognition.face_utils import extract_faces
 from AttendanceSystem.face_recognition.face_identification import start_attendance_flow
+from AttendanceSystem.attendance.image_utils import save_temp_face, convert_image_to_base64
+from models import User, Face, session
 from datetime import datetime
 import os
 
@@ -25,43 +27,37 @@ def add_new_face(user_id, image_data):
     return new_face.id
 
 
-def add_new_user_flow():
-    program_name = input('Enter your Program Name: ').upper()
-    new_user_name = input('Enter new username: ').capitalize()
-    new_user_id = input('Enter new user ID: ')
-
-    new_user = User(name=new_user_name, user_id=new_user_id, program_name=program_name)
-    session.add(new_user)
+def add_user(session, new_user_name, new_user_id, program_name):
+    user = User(name=new_user_name, user_id=new_user_id, program_name=program_name)
+    session.add(user)
     session.commit()
-
-    user_image_folder = os.path.join('data/faces', f'{program_name}', f'{new_user_name}_{new_user_id}')
-    os.makedirs(user_image_folder, exist_ok=True)
 
     cap = cv2.VideoCapture(0)
     i, j = 0, 0
     while True:
         ret, frame = cap.read()
-        if not ret:
-            break
         faces = extract_faces(frame, face_detector)
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 20), 2)
-            cv2.putText(frame, f'Images Captured: {i}/{nimgs}', (30, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 20), 2, cv2.LINE_AA)
+        if len(faces) > 0:
+            (x, y, w, h) = faces[0]
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (86, 32, 251), 1)
+            face = cv2.resize(frame[y:y + h, x:x + w], (50, 50))
+
             if j % 5 == 0:
-                face_path = os.path.join(user_image_folder, f'{new_user_name}_{new_user_id}_{i}.jpg')
-                cv2.imwrite(face_path, frame[y:y + h, x:x + w])
-                add_new_face(new_user.user_id, face_path)
+                face_path = save_temp_face(face, new_user_name, new_user_id, i)
+                face_base64 = convert_image_to_base64(face_path)
+                new_face = Face(user_id=user.id, image_data=face_base64)
+                session.add(new_face)
+                session.commit()
                 i += 1
+
             j += 1
-        if i == nimgs:
+
+        cv2.imshow('Adding New User', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q') or i >= 5:
             break
-        cv2.imshow('Adding new User', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+
     cap.release()
     cv2.destroyAllWindows()
-
 
 def get_attendance_flow():
     program_name = input('Enter your Program Name: ').upper()
