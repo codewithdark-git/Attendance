@@ -3,6 +3,8 @@ from AttendanceSystem.attendance.attendance_manager import save_attendance
 from AttendanceSystem.models import create_tables, session, User, Face, Attendance
 from AttendanceSystem.face_recognition.face_utils import extract_faces
 from AttendanceSystem.face_recognition.face_identification import start_attendance_flow
+from AttendanceSystem.attendance.image_utils import save_temp_face, convert_image_to_base64
+from AttendanceSystem.models import User, Face, session
 from datetime import datetime
 import os
 
@@ -25,43 +27,46 @@ def add_new_face(user_id, image_data):
     return new_face.id
 
 
-def add_new_user_flow():
-    program_name = input('Enter your Program Name: ').upper()
-    new_user_name = input('Enter new username: ').capitalize()
-    new_user_id = input('Enter new user ID: ')
+def add_user(session, new_user_name, new_user_id, program_name):
+    if not new_user_name or not new_user_id or not program_name:
+        print("All fields are required: name, user_id, and program_name.")
+        return
 
-    new_user = User(name=new_user_name, user_id=new_user_id, program_name=program_name)
-    session.add(new_user)
+    existing_user = session.query(User).filter_by(user_id=new_user_id).first()
+    if existing_user:
+        print("A user with this user_id already exists. Every user have unique ID.")
+        return
+
+    user = User(name=new_user_name, user_id=new_user_id, program_name=program_name)
+    session.add(user)
     session.commit()
-
-    user_image_folder = os.path.join('data/faces', f'{program_name}', f'{new_user_name}_{new_user_id}')
-    os.makedirs(user_image_folder, exist_ok=True)
 
     cap = cv2.VideoCapture(0)
     i, j = 0, 0
     while True:
         ret, frame = cap.read()
-        if not ret:
-            break
         faces = extract_faces(frame, face_detector)
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 20), 2)
-            cv2.putText(frame, f'Images Captured: {i}/{nimgs}', (30, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 20), 2, cv2.LINE_AA)
+        if len(faces) > 0:
+            (x, y, w, h) = faces[0]
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (86, 32, 251), 1)
+            face = cv2.resize(frame[y:y + h, x:x + w], (50, 50))
+
             if j % 5 == 0:
-                face_path = os.path.join(user_image_folder, f'{new_user_name}_{new_user_id}_{i}.jpg')
-                cv2.imwrite(face_path, frame[y:y + h, x:x + w])
-                add_new_face(new_user.user_id, face_path)
+                face_path = save_temp_face(face, new_user_name, new_user_id, i)
+                face_base64 = convert_image_to_base64(face_path)
+                new_face = Face(user_id=user.id, image_data=face_base64)
+                session.add(new_face)
+                session.commit()
                 i += 1
+
             j += 1
-        if i == nimgs:
+
+        cv2.imshow('Adding New User', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q') or i >= 5:
             break
-        cv2.imshow('Adding new User', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+
     cap.release()
     cv2.destroyAllWindows()
-
 
 def get_attendance_flow():
     program_name = input('Enter your Program Name: ').upper()
@@ -74,14 +79,28 @@ def get_attendance_flow():
 
 if __name__ == "__main__":
     while True:
-        operation = input("Enter operation ('add', 'start', 'get' or 'exit'): ").lower()
+        operation = input("Enter operation ('add', 'start', 'get' or 'exit'): ")
+
         if operation == 'add':
-            add_new_user_flow()
+            program_name = input('Enter your Program Name: ').upper()
+            new_user_name = input('Enter new username: ').capitalize()
+            new_user_id = input('Enter new user ID: ')
+            add_user(session, new_user_name, new_user_id, program_name)
+
         elif operation == 'start':
             start_attendance_flow()
+
         elif operation == 'get':
-            get_attendance_flow()
+            program_name = input('Enter your Program Name: ').upper()
+            subject = input('Enter subject for attendance: ').capitalize()
+            attendance_file_path = get_attendance_flow(program_name, subject)
+            if attendance_file_path:
+                print(f"Attendance file found at: {attendance_file_path}")
+            else:
+                print("Attendance file not found.")
+
         elif operation == 'exit':
             break
+
         else:
             print("Invalid operation. Please enter 'add', 'start', 'get' or 'exit'.")
