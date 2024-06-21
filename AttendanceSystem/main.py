@@ -4,7 +4,7 @@ from AttendanceSystem.models import create_tables, session, User, Face, Attendan
 from AttendanceSystem.face_recognition.face_utils import extract_faces
 from AttendanceSystem.face_recognition.face_identification import start_attendance_flow
 from AttendanceSystem.attendance.image_utils import save_temp_face, convert_image_to_base64
-from models import User, Face, session
+from AttendanceSystem.models import User, Face, session
 from datetime import datetime
 import os
 
@@ -28,6 +28,15 @@ def add_new_face(user_id, image_data):
 
 
 def add_user(session, new_user_name, new_user_id, program_name):
+    if not new_user_name or not new_user_id or not program_name:
+        print("All fields are required: name, user_id, and program_name.")
+        return
+
+    existing_user = session.query(User).filter_by(user_id=new_user_id).first()
+    if existing_user:
+        print("A user with this user_id already exists. Every user have unique ID.")
+        return
+
     user = User(name=new_user_name, user_id=new_user_id, program_name=program_name)
     session.add(user)
     session.commit()
@@ -70,14 +79,28 @@ def get_attendance_flow():
 
 if __name__ == "__main__":
     while True:
-        operation = input("Enter operation ('add', 'start', 'get' or 'exit'): ").lower()
+        operation = input("Enter operation ('add', 'start', 'get' or 'exit'): ")
+
         if operation == 'add':
-            add_new_user_flow()
+            program_name = input('Enter your Program Name: ').upper()
+            new_user_name = input('Enter new username: ').capitalize()
+            new_user_id = input('Enter new user ID: ')
+            add_user(session, new_user_name, new_user_id, program_name)
+
         elif operation == 'start':
             start_attendance_flow()
+
         elif operation == 'get':
-            get_attendance_flow()
+            program_name = input('Enter your Program Name: ').upper()
+            subject = input('Enter subject for attendance: ').capitalize()
+            attendance_file_path = get_attendance_flow(program_name, subject)
+            if attendance_file_path:
+                print(f"Attendance file found at: {attendance_file_path}")
+            else:
+                print("Attendance file not found.")
+
         elif operation == 'exit':
             break
+
         else:
             print("Invalid operation. Please enter 'add', 'start', 'get' or 'exit'.")
