@@ -28,7 +28,7 @@ The Face Recognition Attendance System is a Python-based application that utiliz
 
     ```bash
    git clone https://github.com/codewithdark-git/Attendance-Management-System.git
-    cd attendance_system
+    cd Attendance-Management-System
     ```
 
 2. Install the required packages:
