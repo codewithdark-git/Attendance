@@ -9,6 +9,16 @@ import base64
 import joblib
 
 def train_model(session, program_name):
+    """
+    Trains a face recognition model using the provided session and program name.
+
+    Args:
+        session (Session): The SQLAlchemy session to use for database operations.
+        program_name (str): The name of the program associated with the faces to be used for training.
+
+    Returns:
+        KNeighborsClassifier or None: The trained KNeighborsClassifier model if successful, or None if there is insufficient data or an error occurred during training.
+    """
     faces = []
     labels = []
 
