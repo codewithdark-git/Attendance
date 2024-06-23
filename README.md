@@ -1,83 +1,132 @@
-# Attendance Management System
 
-Attendance Management System is a Python-based application that helps in managing attendance records for various programs and subjects.
+# Attendance System
 
-## Table of Contents
-- [Introduction](#introduction)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
+## Overview
 
-## Introduction
-Attendance Management System is designed to automate the process of taking attendance in educational institutions or any other settings where attendance tracking is required. It uses face recognition technology to identify individuals and record their attendance.
+The Face Recognition Attendance System is a Python-based application that utilizes face recognition technology to track and record attendance for students. The system stores user data, face images, and attendance records in an SQLite database.
+
+## Features
+
+- **Face Recognition**: Identify students using face recognition technology.
+- **Database Storage**: Store user information, face images, and attendance records in an SQLite database.
+- **Attendance Records**: Ensure attendance is recorded at most once per day per subject.
+- **Temporary Face Storage**: Temporarily store face images before converting them to Base64 for database storage.
+- **Program and Subject Management**: Manage different programs and subjects for accurate attendance tracking.
+
+## Requirements
+
+- Python 3.10+
+- OpenCV
+- SQLAlchemy
+- scikit-learn
+- joblib
+- numpy
+
+## Installation
+
+1. Clone the repository:
+
+    ```bash
+    git clone https://github.com/Codewithdark-git/Attendance-Management-system.git
+    cd attendance_system
+    ```
+
+2. Install the required packages:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3. Initialize the database:
+
+    ```bash
+    python -c "from models import create_tables; create_tables()"
+    ```
+
+## Usage
+
+Run the main application:
+
+```bash
+python -m AttendanceSystem.main
+```
+
+### Operations
+
+The application supports the following operations:
+
+1. **Add New User**:
+    - Prompts for user details and captures face images to add a new user to the system.
+
+2. **Start Attendance**:
+    - Initiates the attendance process for a specified program and subject. Captures face images and records attendance for identified users.
+
+3. **Get Attendance**:
+    - Retrieves and displays attendance records for a specified program and subject.
+
+4. **Exit**:
+    - Exits the application.
+
+### Example Workflow
+
+1. **Add New User**:
+
+    ```bash
+    Enter operation ('add', 'start', 'get' or 'exit'): add
+    Enter new user name (format: Firstname_Lastname): John_Doe
+    Enter new user ID: JD123
+    Enter Your Program name: BSAI
+    ```
+
+    The application will capture face images from the webcam and store them in the database.
+
+2. **Start Attendance**:
+
+    ```bash
+    Enter operation ('add', 'start', 'get' or 'exit'): start
+    Enter Your Program name: BSAI
+    Enter your Subject for Attendance: Maths
+    ```
+
+    The application will use the webcam to identify users and record their attendance.
+
+3. **Get Attendance**:
+
+    ```bash
+    Enter operation ('add', 'start', 'get' or 'exit'): get
+    Enter Your Program name: BSAI
+    Enter your Subject: Maths
+    ```
+
+    The application will display the attendance records for the specified program and subject.
 
 ## Project Structure
 
-- `attendance_system/`
-- `main.py`: Entry point for the project.
-- `config.py`: Configuration variables and constants.
-- `utils.py`: Helper functions.
-- `face_recognition/`: Face recognition related modules.
-- `attendance/`: Attendance management related modules.
-- `data/`: Directory for storing data like trained models and attendance files.
-- `requirements.txt`: Project dependencies.
-- `README.md`: Project documentation.
-
-## Features
-- Face detection and recognition for attendance tracking.
-- Support for multiple programs and subjects.
-- User-friendly interface for adding new users and starting attendance sessions.
-- Automatically generates attendance reports in CSV format.
-- Prevents duplicate attendance records for the same individual on the same day and subject.
-
-## Installation
-1. Clone the repository:
-    ```
-    git clone https://github.com/codewithdark-git/attendance-system.git
-    ```
-2. Install the required dependencies:
-    ```
-    pip install -r requirements.txt
-    ```
-3. Download the pre-trained face detection model: [haarcascade_frontalface_default.xml](https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml)
-4. Place the `haarcascade_frontalface_default.xml` file in the project directory.
-
-## Usage
-1. Run the `main.py` file:
-    ```
-    python -m AttendanceSystem.main
-    ```
-2. Follow the on-screen instructions to add new users and start taking attendance.
-
-* To add a new user:
-    ```add```
-* To start the attendance process:
-    ```start```
-* To get the attendance file:
-    ```get```
-* To exit:
-    ```exit```
-
+- `AttendanceSystem/`
+  - `__init__.py`
+  - `attendance/`
+    - `attendance_manager.py`
+  - `config.py`
+  - `face_recognition/`
+    - `face_detection.py`
+    - `face_identification.py`
+    - `face_training.py`
+  - `main.py`
+  - `models.py`
 
 ## Contributing
-Contributions are welcome! If you encounter any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request.
 
-## Libraries Used
-- `OpenCV:` For image processing and face detection.
-- `NumPy:` For numerical computations.
-- `scikit-learn:` For implementing machine learning algorithms.
-- `joblib:` For saving and loading machine learning models.
-- `csv:` For reading and writing CSV files.
-- `datetime:` For handling date and time operations.
-
-## Notes
-
-- Ensure that the webcam is connected and working properly before running the attendance process.
-- Make sure to add at least two users before starting the attendance process.
-
+Contributions are welcome! Please fork the repository and create a pull request with your changes.
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
- section at the end of your README file to provide information about the libraries used in your project and their respective purposes. Adjust the list of libraries as needed based on the specific dependencies of your project.
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## Acknowledgements
+
+- This project uses [OpenCV](https://opencv.org/) for image processing and face detection.
+- Face recognition is implemented using the [scikit-learn](https://scikit-learn.org/) library.
+
+```
+
+This README file provides a comprehensive guide to understanding, installing, and using the face recognition attendance system. It covers the project's features, installation steps, usage instructions, and an example workflow.
