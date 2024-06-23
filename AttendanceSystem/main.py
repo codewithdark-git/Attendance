@@ -5,6 +5,7 @@ from AttendanceSystem.face_recognition.face_utils import extract_faces
 from AttendanceSystem.face_recognition.face_identification import start_attendance_flow
 from AttendanceSystem.attendance.image_utils import save_temp_face, convert_image_to_base64
 from AttendanceSystem.models import User, Face, session
+import csv
 from datetime import datetime
 import os
 
@@ -16,6 +17,16 @@ nimgs = 5
 
 
 def add_new_face(user_id, image_data):
+    """
+    Adds a new face to the database for a given user.
+
+    Args:
+        user_id (int): The ID of the user to add the face to.
+        image_data (str): The base64 encoded image data of the face.
+
+    Returns:
+        int or None: The ID of the newly added face, or None if the user was not found.
+    """
     user = session.query(User).filter_by(user_id=user_id).first()
     if not user:
         print("User not found")
@@ -28,6 +39,34 @@ def add_new_face(user_id, image_data):
 
 
 def add_user(session, new_user_name, new_user_id, program_name):
+    """
+    Adds a new user to the database with the given information.
+
+    Args:
+        session (Session): The SQLAlchemy session to use for database operations.
+        new_user_name (str): The name of the new user.
+        new_user_id (int): The ID of the new user.
+        program_name (str): The name of the program associated with the new user.
+
+    Returns:
+        None
+
+    Raises:
+        None
+
+    Description:
+        This function adds a new user to the database with the given information. It first checks if all required fields are provided. If any field is missing, it prints an error message and returns.
+
+        It then checks if a user with the same user_id already exists in the database. If a user with the same user_id exists, it prints an error message and returns.
+
+        If the required fields are provided and no user with the same user_id exists, it creates a new User object with the given information and adds it to the database.
+
+        It then captures video from the default camera and continuously checks for faces in each frame. If a face is detected, it resizes it, draws a rectangle around it, and saves it as a temporary image. It then converts the image to base64 and creates a new Face object with the user_id and image_data. The new Face object is added to the database and the image is saved as a temporary image.
+
+        The function displays the video feed with the detected faces and allows the user to capture 5 images by pressing 'q' or reaching the maximum number of images.
+
+        Finally, the function releases the camera and closes the video window.
+    """
     if not new_user_name or not new_user_id or not program_name:
         print("All fields are required: name, user_id, and program_name.")
         return
@@ -68,14 +107,55 @@ def add_user(session, new_user_name, new_user_id, program_name):
     cap.release()
     cv2.destroyAllWindows()
 
-def get_attendance_flow():
-    program_name = input('Enter your Program Name: ').upper()
-    subject = input('Enter subject for attendance: ').capitalize()
+
+def get_attendance_flow(program_name, subject):
+    """
+    Retrieves the attendance records for a given program and subject.
+
+    Args:
+        program_name (str): The name of the program.
+        subject (str): The subject for which attendance is being recorded.
+
+    Returns:
+        list: A list of AttendanceRecord objects representing the attendance records.
+
+    Side Effects:
+        - Writes the attendance records to a CSV file.
+
+    Note:
+        - The program_name and subject are case-sensitive.
+        - The function prompts the user for input if the program_name and subject are not provided as arguments.
+        - The function does not print the attendance records directly. Instead, it writes them to a CSV file.
+    """
+    # program_name = input('Enter your Program Name: ').upper()
+    # subject = input('Enter subject for attendance: ').capitalize()
     attendance_records = session.query(Attendance).join(User).filter(
         User.program_name == program_name, Attendance.subject == subject).all()
-    for record in attendance_records:
-        print(f"{record.user.name} attended {record.subject} on {record.date}")
+    record_to_csv(attendance_records)
+    return attendance_records
+    # for record in attendance_records:
+    #     print(f"{record.user.name} attended {record.subject} on {record.date}")
 
+
+def record_to_csv(attendance_records):
+    """
+    Writes a list of attendance records to a CSV file.
+
+    Args:
+        attendance_records (List[AttendanceRecord]): A list of AttendanceRecord objects representing the attendance records.
+
+    Returns:
+        None
+
+    Prints:
+        'CSV file created successfully.' if the CSV file is created successfully.
+    """
+    with open('attendance.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['ID','Name', 'Subject', 'Date'])
+        for record in attendance_records:
+            writer.writerow([record.user.user_id, record.user.name, record.subject, record.date])
+    print('CSV file created successfully.')
 
 if __name__ == "__main__":
     while True:
@@ -88,16 +168,12 @@ if __name__ == "__main__":
             add_user(session, new_user_name, new_user_id, program_name)
 
         elif operation == 'start':
-            start_attendance_flow()
+            start_attendance_flow(session)
 
         elif operation == 'get':
             program_name = input('Enter your Program Name: ').upper()
             subject = input('Enter subject for attendance: ').capitalize()
-            attendance_file_path = get_attendance_flow(program_name, subject)
-            if attendance_file_path:
-                print(f"Attendance file found at: {attendance_file_path}")
-            else:
-                print("Attendance file not found.")
+            get_attendance_flow(program_name, subject)
 
         elif operation == 'exit':
             break
